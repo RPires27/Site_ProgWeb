@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, redirect, url_for, session
-from models import db, User, Role
+from models import db, User, Role, Morada
 
 
 app = Flask(__name__)
@@ -67,6 +67,12 @@ def login_form():
     else:
         # Login failed
         return redirect(url_for('error_404'))
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    #snip
+    return render_template('404.html'), 404
     
 
 @app.route("/register-form", methods=['POST'])
@@ -82,7 +88,6 @@ def register_form():
     
     role = Role(role="Cliente")
     register = User(username=username, password=password, email=email, firstname=first_name,lastname=last_name, phone=phone, role=role)
-    
 
     db.session.add_all([register, role])
     db.session.commit()
@@ -94,8 +99,45 @@ def register_form():
     else:
         # Login failed
         return redirect(url_for('error_404'))
+    
 
 
+
+@app.route("/update-profile", methods=['POST'])
+def update_profile():
+
+    username = session['user']  
+    user = User.query.filter_by(username=username).first()
+    morada = Morada.query.filter_by(user=user).first()
+
+    if morada:
+
+        morada.add_line1 = request.form['register-form-add_line1']
+        morada.add_line2 = request.form['register-form-add_line2']
+        morada.city = request.form['register-form-city']
+        morada.postal_code = request.form['register-form-postal-code']
+    else:
+
+        add_line1 = request.form['register-form-add_line1']
+        add_line2 = request.form['register-form-add_line2']
+        city = request.form['register-form-city']
+        postal_code = request.form['register-form-postal-code']
+        morada = Morada(user=user, add_line1=add_line1, add_line2=add_line2, city=city, postal_code=postal_code)
+        db.session.add(morada)
+        
+    db.session.commit()
+
+
+    return redirect(url_for('profile'))
+
+
+
+
+
+
+@app.route("/profile-update")
+def profile_update():
+    return render_template("update-profile.html")
 
 
 if __name__ == "__main__":
